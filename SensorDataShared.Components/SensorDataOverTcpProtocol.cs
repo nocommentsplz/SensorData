@@ -11,10 +11,15 @@ namespace SensorData.SharedComponents
 
         public const int NumberOfBytesToRepresentPacketLength = 2;
 
-        public class Commands
+        public static class ApiCommands
         {
             public const byte StartSensorDataService = 0x00;
             public const byte StopSensorDataService = 0x01;
+        }
+
+        public static class SensorCommands
+        {
+            public const byte SensorValue = 0xAA;
         }
     }
 }

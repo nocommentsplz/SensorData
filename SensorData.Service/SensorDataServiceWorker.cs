@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,27 +15,42 @@ namespace SensorData.Service
     public class SensorDataServiceWorker : BackgroundService
     {
         private readonly ILogger<SensorDataServiceWorker> _logger;
-        private readonly ITcpCommunicationServer<ApiCommandObject> _apiServer;
-        private readonly ApiTcpServerSettings _apiSettings;
+        IConfiguration _configuration;
+        Dictionary<Guid, ICommunicationServer> _servers;
+        ISensorDataServerRegistry _sensorDataServerRegistry;
 
         public SensorDataServiceWorker(ILogger<SensorDataServiceWorker> logger,
-            IOptions<ApiTcpServerSettings> apiSettings, ITcpCommunicationServer<ApiCommandObject> apiServer)
+            IConfiguration configuration, ISensorDataServerRegistry sensorDataServerRegistry)
         {
             _logger = logger;
-            _apiSettings = apiSettings.Value;
-            _apiServer = apiServer;
+            _configuration = configuration;
+            _sensorDataServerRegistry = sensorDataServerRegistry;            
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            _apiServer.Settings = _apiSettings;
-            _apiServer.Initialize();
+            _servers = new Dictionary<Guid, ICommunicationServer>();
+            foreach (SensorDataServerRegistrar registrar in _sensorDataServerRegistry.RegisteredServerCreators)
+            {
+                ICommunicationServer server = registrar.ServerCreator(_configuration);
+                if (registrar.InitializeOnCreate)
+                {
+                    server.Initialize();
+                }
+
+                _servers.Add(registrar.ServerId, server);
+            }
+
             return base.StartAsync(cancellationToken);
         }
 
         public override Task StopAsync(CancellationToken cancellationToken)
         {
-            _apiServer.Shutdown();
+            foreach (ICommunicationServer server in _servers.Values)
+            {
+                server.Shutdown();
+            }
+
             return base.StopAsync(cancellationToken);
         }
 

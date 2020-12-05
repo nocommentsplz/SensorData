@@ -12,7 +12,7 @@ namespace SensorData.Service
     {
         internal static void AddCommunicationServerComponents(this IServiceCollection services)
         {
-            services.AddTransient<ITcpCommunicationServer<ApiCommandObject>, TcpCommunicationServer<ApiCommandObject>>();
+            services.AddSingleton<ISensorDataServerRegistry, SensorDataServerRegistry>();
         }
 
         internal static void LoadSettings(this IServiceCollection services, IConfiguration configuration)

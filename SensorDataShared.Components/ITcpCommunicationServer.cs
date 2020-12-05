@@ -5,8 +5,7 @@ using System.Text;
 
 namespace SensorData.SharedComponents
 {
-    public interface ITcpCommunicationServer<TCommandObject> : ICommunicationServer<TCommandObject>
-        where TCommandObject : class, ITcpCommandObject, new()
+    public interface ITcpCommunicationServer : ICommunicationServer
     {
         public TcpServerSettings Settings { get; set; }
     }

@@ -38,7 +38,7 @@ namespace SensorData.Api.Controllers
         public ActionResult Start()
         {
             _tcpClient.Connect(_settings);
-            _tcpClient.Send(new ApiCommandObject(SensorDataOverTcpProtocol.Commands.StartSensorDataService));
+            _tcpClient.Send(new ApiCommandObject(SensorDataOverTcpProtocol.ApiCommands.StartSensorDataService));
             return Ok();
         }
 
@@ -46,7 +46,7 @@ namespace SensorData.Api.Controllers
         [Route("stop")]
         public ActionResult Stop()
         {
-            _tcpClient.Send(new ApiCommandObject(SensorDataOverTcpProtocol.Commands.StopSensorDataService));
+            _tcpClient.Send(new ApiCommandObject(SensorDataOverTcpProtocol.ApiCommands.StopSensorDataService));
             return Ok();
         }
 

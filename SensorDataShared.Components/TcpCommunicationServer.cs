@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace SensorData.SharedComponents
 {
-    public class TcpCommunicationServer<TCommandObject> : ITcpCommunicationServer<TCommandObject>
+    public class TcpCommunicationServer<TCommandObject> : ITcpCommunicationServer
         where TCommandObject : class, ITcpCommandObject, new()
     {
         private object _initializeLock = new object();
@@ -22,12 +22,14 @@ namespace SensorData.SharedComponents
         private CancellationToken cancellationToken;
         public TcpCommunicationServer()
         {
-            cancellationTokenSource = new CancellationTokenSource();
-            cancellationToken = cancellationTokenSource.Token;
+            
         }
 
         public bool Initialized { get; private set; }
+
         public TcpServerSettings Settings { get; set; }
+
+        public ICommandObjectProcessor<TCommandObject> CommandObjectProcessor { private get; set; }
 
         public bool Initialize()
         {
@@ -102,6 +104,8 @@ namespace SensorData.SharedComponents
             Console.WriteLine("Waiting for a connection...");
             _listenerSocket.BeginAccept(new AsyncCallback(ApiAcceptCallback), _listenerSocket);
 
+            cancellationTokenSource = new CancellationTokenSource();
+            cancellationToken = cancellationTokenSource.Token;
             ReadFromConnectedClients();
         }
 
@@ -109,16 +113,39 @@ namespace SensorData.SharedComponents
         {
             Console.WriteLine("Accepting a connection...");
 
-            Socket clientSocket = _listenerSocket.EndAccept(ar);
-            _clientSockets.Add(clientSocket);
+            try
+            {
+                Socket clientSocket = _listenerSocket.EndAccept(ar);
+                _clientSockets.Add(clientSocket);
 
-            Console.WriteLine("Waiting for new connection...");
-            _listenerSocket.BeginAccept(new AsyncCallback(ApiAcceptCallback), _listenerSocket);
+                Console.WriteLine("Waiting for new connection...");
+                _listenerSocket.BeginAccept(new AsyncCallback(ApiAcceptCallback), _listenerSocket);
+            }
+            catch (ObjectDisposedException)
+            {
+
+            }
+            catch (NullReferenceException)
+            {
+
+            }
         }
 
         private void ExecuteShutdownRoutine()
         {
+            cancellationTokenSource.Cancel();
 
+            foreach (Socket socket in _clientSockets)
+            {
+                socket.Close();
+                socket.Dispose();
+            }
+
+            _clientSockets.Clear();
+
+            _listenerSocket.Close();
+            _listenerSocket.Dispose();
+            _listenerSocket = null;            
         }
 
         private void ReadFromConnectedClients()
@@ -132,12 +159,12 @@ namespace SensorData.SharedComponents
 
                     if (readList.Any())
                     {
-                        Socket.Select(readList, null, null, 1000000);
+                        Socket.Select(readList, null, null, 1000);
 
                         foreach (Socket socket in readList)
                         {
                             TCommandObject apiCommandObject = socket.ReceiveCommandObject<TCommandObject>();
-                            ProcessApiCommand(apiCommandObject);
+                            ProcessApiCommand(apiCommandObject, socket);
                         }
                     }
                     else
@@ -148,46 +175,15 @@ namespace SensorData.SharedComponents
             });
         }
 
-        private void ProcessApiCommand(TCommandObject apiCommandObject)
+        private void ProcessApiCommand(TCommandObject apiCommandObject, Socket socket)
         {
             Task.Run(() =>
             {
-                Console.WriteLine($"New Api Command Received, Packet Size:{apiCommandObject.PacketSize}");
+                if (null != CommandObjectProcessor)
+                {
+                    CommandObjectProcessor.ProcessCommand(apiCommandObject, socket);
+                }
             });
         }
-
-        //private void ReadApiCommandPacketLength(Socket clientSocket, TCommandObject apiCommandObject)
-        //{
-        //    apiCommandObject.RawCommandDataBuffer = new byte[SensorDataOverTcpProtocol.NumberOfBytesToRepresentPacketLength];
-        //    clientSocket.BeginReceive(apiCommandObject.RawCommandDataBuffer,
-        //        0, SensorDataOverTcpProtocol.NumberOfBytesToRepresentPacketLength, 0, new AsyncCallback(ReadApiCommandPacketLengthCallback), apiCommandObject);
-        //}
-
-        //private void ReadApiCommandPacketLengthCallback(IAsyncResult ar)
-        //{
-        //    // Read rest of the api command data from the client socket.
-        //    int bytesRead = _clientSocket.EndReceive(ar);
-        //    TCommandObject apiCommandObject = (TCommandObject)ar.AsyncState;
-        //    if (bytesRead > 0)
-        //    {
-        //        byte[] commandBuffer = new byte[SensorDataOverTcpProtocol.NumberOfBytesToRepresentPacketLength + apiCommandObject.PacketSize];
-        //        apiCommandObject.RawCommandDataBuffer.CopyTo(commandBuffer, 0);
-        //        apiCommandObject.RawCommandDataBuffer = commandBuffer;
-
-        //        _clientSocket.BeginReceive(apiCommandObject.RawCommandDataBuffer, SensorDataOverTcpProtocol.NumberOfBytesToRepresentPacketLength,
-        //            apiCommandObject.PacketSize, 0, new AsyncCallback(ReadApiCommandCallback), apiCommandObject);
-        //    }
-        //}
-
-        //private void ReadApiCommandCallback(IAsyncResult ar)
-        //{
-        //    int bytesRead = _clientSocket.EndReceive(ar);
-        //    TCommandObject apiCommandObject = (TCommandObject)ar.AsyncState;
-        //    if (bytesRead > 0)
-        //    {
-        //        ProcessApiCommand(apiCommandObject);
-        //        ReadApiCommand();
-        //    }
-        //}
     }
 }
