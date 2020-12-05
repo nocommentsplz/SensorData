@@ -13,7 +13,8 @@ namespace SensorData.Service
             = new Dictionary<byte, Func<IIndividualCommandObjectProcessor<ApiCommandObject>>>()
             {
                 { SensorDataOverTcpProtocol.ApiCommands.StartSensorDataService, ()=> new StartSensorDataServiceCommandObjectProcessor()  },
-                { SensorDataOverTcpProtocol.ApiCommands.StopSensorDataService, ()=> new StopSensorDataServiceCommandObjectProcessor()  }
+                { SensorDataOverTcpProtocol.ApiCommands.StopSensorDataService, ()=> new StopSensorDataServiceCommandObjectProcessor() },
+                { SensorDataOverTcpProtocol.ApiCommands.FetchSensorValue, ()=> new FetchSensorValueCommandObjectProcessor()  }
             };
 
         protected override IIndividualCommandObjectProcessor<ApiCommandObject> GetIndividualCommandObjectProcessor(ApiCommandObject commandObject)

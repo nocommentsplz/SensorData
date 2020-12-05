@@ -13,6 +13,7 @@ namespace SensorData.Service
         internal static void AddCommunicationServerComponents(this IServiceCollection services)
         {
             services.AddSingleton<ISensorDataServerRegistry, SensorDataServerRegistry>();
+            services.AddSingleton<ISensorValueReportGenerator, SensorValueReportGenerator>();
         }
 
         internal static void LoadSettings(this IServiceCollection services, IConfiguration configuration)

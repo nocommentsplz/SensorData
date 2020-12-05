@@ -50,20 +50,33 @@ namespace SensorData.Api.Controllers
             return Ok();
         }
 
-        [HttpPost]
-        [Route("connect")]
-        public ActionResult Connect()
+        [HttpGet]
+        [Route("sensorvalue/{id}")]
+        public ActionResult FetchSensorValue(int id)
         {
-            _tcpClient.Connect(_settings);
-            return Ok(new { Connected = _tcpClient.Connected });
+            if (0 >= id || 255 < id)
+            {
+                return BadRequest();
+            }
+
+            ApiCommandObject apiCommandObject = _tcpClient.SendReceive(new ApiCommandObject(SensorDataOverTcpProtocol.ApiCommands.FetchSensorValue, (byte)id));
+            return Ok(new { sensor_id = id, value = apiCommandObject.Data[0] });
         }
 
-        [HttpPost]
-        [Route("disconnect")]
-        public ActionResult Disconnect()
-        {
-            _tcpClient.Disconnect();
-            return Ok(new { Connected = _tcpClient.Connected });
-        }
+        //[HttpPost]
+        //[Route("connect")]
+        //public ActionResult Connect()
+        //{
+        //    _tcpClient.Connect(_settings);
+        //    return Ok(new { Connected = _tcpClient.Connected });
+        //}
+
+        //[HttpPost]
+        //[Route("disconnect")]
+        //public ActionResult Disconnect()
+        //{
+        //    _tcpClient.Disconnect();
+        //    return Ok(new { Connected = _tcpClient.Connected });
+        //}
     }
 }

@@ -17,12 +17,12 @@ namespace SensorData.SharedComponents
     {
         private object _initializeLock = new object();
         private Socket _listenerSocket;
-        private ConcurrentBag<Socket> _clientSockets = new ConcurrentBag<Socket>();
+        private SocketCollection _clientSockets = new SocketCollection();
         private CancellationTokenSource cancellationTokenSource;
         private CancellationToken cancellationToken;
         public TcpCommunicationServer()
         {
-            
+
         }
 
         public bool Initialized { get; private set; }
@@ -135,27 +135,31 @@ namespace SensorData.SharedComponents
         {
             cancellationTokenSource.Cancel();
 
-            foreach (Socket socket in _clientSockets)
+            while (_clientSockets.Count > 0)
             {
-                socket.Close();
-                socket.Dispose();
-            }
+                foreach (Socket socket in _clientSockets.Items)
+                {
+                    socket.Close();
+                    socket.Dispose();
+                }
 
-            _clientSockets.Clear();
+                _clientSockets.Clear();
+            }
 
             _listenerSocket.Close();
             _listenerSocket.Dispose();
-            _listenerSocket = null;            
+            _listenerSocket = null;
         }
 
         private void ReadFromConnectedClients()
         {
             Task.Run(async () =>
             {
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     List<Socket> readList = new List<Socket>();
-                    readList.AddRange(_clientSockets);
+                    readList.AddRange(_clientSockets.Items);
 
                     if (readList.Any())
                     {
@@ -163,8 +167,16 @@ namespace SensorData.SharedComponents
 
                         foreach (Socket socket in readList)
                         {
-                            TCommandObject apiCommandObject = socket.ReceiveCommandObject<TCommandObject>();
-                            ProcessApiCommand(apiCommandObject, socket);
+                            try
+                            {
+                                TCommandObject apiCommandObject = socket.ReceiveCommandObject<TCommandObject>();
+                                ProcessApiCommand(apiCommandObject, socket);
+                            }
+                            catch (SocketException ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                                _clientSockets.Remove(socket);
+                            }
                         }
                     }
                     else

@@ -16,6 +16,7 @@ namespace SensorData.Service.CommandObjects.Api
             }
 
             Console.WriteLine($"Sensor Value, Sensor Id : {commandObject.SensorId}, Value : {commandObject.Data[0]}");
+            SensorValueCollection.Instance.AddSensorValue(commandObject.SensorId, commandObject.Data[0]);
         }
     }
 }

@@ -18,13 +18,19 @@ namespace SensorData.Service
         IConfiguration _configuration;
         Dictionary<Guid, ICommunicationServer> _servers;
         ISensorDataServerRegistry _sensorDataServerRegistry;
+        ISensorValueReportGenerator _reportGenerator;
+        SensorValueReportSettings _reportSettings;
 
-        public SensorDataServiceWorker(ILogger<SensorDataServiceWorker> logger,
-            IConfiguration configuration, ISensorDataServerRegistry sensorDataServerRegistry)
+        public SensorDataServiceWorker(ILogger<SensorDataServiceWorker> logger, IConfiguration configuration,
+            ISensorValueReportGenerator reportGenerator, ISensorDataServerRegistry sensorDataServerRegistry)
         {
             _logger = logger;
             _configuration = configuration;
-            _sensorDataServerRegistry = sensorDataServerRegistry;            
+            _sensorDataServerRegistry = sensorDataServerRegistry;
+            _reportGenerator = reportGenerator;
+
+            _reportSettings = _configuration.GetSection("SensorValueReportSettings").Get<SensorValueReportSettings>();
+            _reportGenerator.Settings = _reportSettings;
         }
 
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -56,10 +62,12 @@ namespace SensorData.Service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            
             while (!stoppingToken.IsCancellationRequested)
             {
-                _logger.LogInformation("{time}", DateTimeOffset.Now);
-                await Task.Delay(1000, stoppingToken);
+                await Task.Delay(_reportSettings.IntervalInSeconds * 1000, stoppingToken);
+                _logger.LogInformation("Generating report at {time}", DateTimeOffset.Now);
+                _reportGenerator.GenerateReport();                
             }
         }
     }
