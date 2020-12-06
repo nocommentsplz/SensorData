@@ -8,7 +8,8 @@ namespace SensorData.Service.Settings
     public class SensorValueReportSettings
     {
         public string FileFormat { get; set; }
-        public int IntervalInSeconds { get; set; }
+        public int ReportInConsoleIntervalInSeconds { get; set; }
+        public int ReportInFileIntervalInSeconds { get; set; }
         public string DirectoryPath { get; set; }
     }
 }

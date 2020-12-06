@@ -11,22 +11,11 @@ namespace SensorData.Service
     {
         public SensorValueReportSettings Settings { private get; set; }
         private static object _generateLock = new object();
-        public void GenerateReport()
+        public void SaveReportToFile()
         {
             lock (_generateLock)
             {
-                List<SensorValueReportEntity> report = new List<SensorValueReportEntity>();
-
-                IEnumerable<byte> sensors = SensorValueCollection.Instance.GetSensors();
-                foreach (byte sensorId in sensors)
-                {
-                    IEnumerable<byte> sensorValues = SensorValueCollection.Instance.GetSensorValues(sensorId);
-                    if (sensorValues.Any())
-                    {
-                        report.Add(new SensorValueReportEntity()
-                        { sensor_id = sensorId, latest = sensorValues.Last(), average = Convert.ToByte(sensorValues.Average(x => x)) });
-                    }
-                }
+                List<SensorValueReportEntity> report = GenerateReport();
 
                 if (report.Any())
                 {
@@ -44,12 +33,23 @@ namespace SensorData.Service
                 }
             }
         }
-    }
 
-    class SensorValueReportEntity
-    {
-        public byte sensor_id { get; set; }
-        public byte average { get; set; }
-        public byte latest { get; set; }
+        public List<SensorValueReportEntity> GenerateReport()
+        {
+            List<SensorValueReportEntity> report = new List<SensorValueReportEntity>();
+
+            IEnumerable<byte> sensors = SensorValueCollection.Instance.GetSensors();
+            foreach (byte sensorId in sensors)
+            {
+                IEnumerable<byte> sensorValues = SensorValueCollection.Instance.GetSensorValues(sensorId);
+                if (sensorValues.Any())
+                {
+                    report.Add(new SensorValueReportEntity()
+                    { sensor_id = sensorId, latest = sensorValues.Last(), average = Convert.ToByte(sensorValues.Average(x => x)) });
+                }
+            }
+
+            return report;
+        }
     }
 }

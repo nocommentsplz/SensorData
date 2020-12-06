@@ -7,6 +7,7 @@ using SensorData.SharedComponents;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -62,12 +63,37 @@ namespace SensorData.Service
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            
             while (!stoppingToken.IsCancellationRequested)
             {
-                await Task.Delay(_reportSettings.IntervalInSeconds * 1000, stoppingToken);
-                _logger.LogInformation("Generating report at {time}", DateTimeOffset.Now);
-                _reportGenerator.GenerateReport();                
+                var workers = new List<Task>();
+
+                workers.Add(SaveReportToFile(stoppingToken));
+                workers.Add(DisplayReportInConsole(stoppingToken));
+
+                await Task.WhenAll(workers.ToArray());
+            }
+        }
+
+        private async Task SaveReportToFile(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(_reportSettings.ReportInFileIntervalInSeconds * 1000, stoppingToken);
+                _reportGenerator.SaveReportToFile();
+            }
+        }
+
+        private async Task DisplayReportInConsole(CancellationToken stoppingToken)
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(_reportSettings.ReportInConsoleIntervalInSeconds * 1000, stoppingToken);
+                var report = _reportGenerator.GenerateReport();
+                if (report.Any())
+                {
+                    string reportText = JsonSerializer.Serialize(report, new JsonSerializerOptions() { WriteIndented = true });
+                    _logger.LogInformation($"Generating report at {DateTimeOffset.Now}\n${reportText}");
+                }
             }
         }
     }

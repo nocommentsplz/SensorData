@@ -31,6 +31,8 @@ namespace SensorData.SharedComponents
 
         public ICommandObjectProcessor<TCommandObject> CommandObjectProcessor { private get; set; }
 
+        protected virtual bool LogOnConnectDisconnect { get; }
+
         public bool Initialize()
         {
             if (!Initialized)
@@ -101,7 +103,11 @@ namespace SensorData.SharedComponents
             _listenerSocket.Bind(localEndPoint);
             _listenerSocket.Listen(Settings.Backlog);
 
-            Console.WriteLine("Waiting for a connection...");
+            if (LogOnConnectDisconnect)
+            {
+                Console.WriteLine("Waiting for a connection...");
+            }
+
             _listenerSocket.BeginAccept(new AsyncCallback(ApiAcceptCallback), _listenerSocket);
 
             cancellationTokenSource = new CancellationTokenSource();
@@ -111,14 +117,22 @@ namespace SensorData.SharedComponents
 
         private void ApiAcceptCallback(IAsyncResult ar)
         {
-            Console.WriteLine("Accepting a connection...");
+            if (LogOnConnectDisconnect)
+            {
+                Console.WriteLine("Accepting a connection...");
+            }
 
             try
             {
                 Socket clientSocket = _listenerSocket.EndAccept(ar);
                 _clientSockets.Add(clientSocket);
 
-                Console.WriteLine("Waiting for new connection...");
+                if (LogOnConnectDisconnect)
+                {
+                    Console.WriteLine($"Total Number of Active Connections : {_clientSockets.Count}");
+                    Console.WriteLine("Waiting for new connection...");
+                }
+
                 _listenerSocket.BeginAccept(new AsyncCallback(ApiAcceptCallback), _listenerSocket);
             }
             catch (ObjectDisposedException)
@@ -174,8 +188,12 @@ namespace SensorData.SharedComponents
                             }
                             catch (SocketException ex)
                             {
-                                Console.WriteLine(ex.Message);
                                 _clientSockets.Remove(socket);
+                                if (LogOnConnectDisconnect)
+                                {
+                                    Console.WriteLine(ex.Message);
+                                    Console.WriteLine($"Total Number of Active Connections : {_clientSockets.Count}");
+                                }
                             }
                         }
                     }

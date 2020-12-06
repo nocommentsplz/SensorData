@@ -43,5 +43,7 @@ namespace SensorData.Service
                 return _Instance;
             }
         }
+
+        protected override bool LogOnConnectDisconnect { get => true; }
     }
 }

@@ -7,7 +7,15 @@ namespace SensorData.Service
 {
     public interface ISensorValueReportGenerator
     {
-        void GenerateReport();
+        List<SensorValueReportEntity> GenerateReport();
+        void SaveReportToFile();
         SensorValueReportSettings Settings { set; }
+    }
+
+    public class SensorValueReportEntity
+    {
+        public byte sensor_id { get; set; }
+        public byte average { get; set; }
+        public byte latest { get; set; }
     }
 }

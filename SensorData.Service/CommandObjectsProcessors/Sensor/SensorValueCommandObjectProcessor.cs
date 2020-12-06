@@ -15,7 +15,6 @@ namespace SensorData.Service.CommandObjects.Api
                 throw new Exception("Wrong Command Object Processor");
             }
 
-            Console.WriteLine($"Sensor Value, Sensor Id : {commandObject.SensorId}, Value : {commandObject.Data[0]}");
             SensorValueCollection.Instance.AddSensorValue(commandObject.SensorId, commandObject.Data[0]);
         }
     }

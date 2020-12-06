@@ -14,5 +14,7 @@ namespace SensorData.Service
             CommandObjectProcessor = new ApiCommandObjectProcessor();
             Settings = configuration.GetSection("ApiTcpServerSettings").Get<ApiTcpServerSettings>();
         }
+
+        protected override bool LogOnConnectDisconnect { get => false; }
     }
 }
